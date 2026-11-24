@@ -1,0 +1,20 @@
+{
+  "name": "momentz",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Momentz: an AI study coach that turns one moment from your week into one small thing to try.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "dev": "node --env-file-if-exists=.env --watch server/index.js",
+    "test": "node --test test/app.test.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0",
+    "express": "^5.3.0",
+    "zod": "^4.6.7"
+  }
+}
