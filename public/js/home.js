@@ -1,4 +1,5 @@
-// Home: name one moment, choose typing or speaking, start the chat.
+// Home: a welcome the first time, then name one moment, choose typing or
+// speaking, and start the chat.
 
 import { autosize, h, icon, sidebar, toast } from './common.js';
 import { createMoment, getState } from './store.js';
@@ -50,7 +51,7 @@ moment.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.shiftKey) start(event);
 });
 
-document.body.append(
+const home =
   h(
     'div.shell',
     null,
@@ -106,6 +107,39 @@ document.body.append(
         )
       )
     )
-  )
-);
-moment.focus();
+  );
+
+function showHome() {
+  document.body.replaceChildren(home);
+  moment.focus();
+}
+
+// Shown until the student has pressed "Let's start" once in this browser.
+function showWelcome() {
+  const start = h(
+    'button.btn.primary.big',
+    {
+      onclick: () => {
+        localStorage.setItem('momentz-welcomed', 'yes');
+        showHome();
+      }
+    },
+    "Let's start",
+    icon('arrow', 16, 2.2)
+  );
+  document.body.replaceChildren(
+    h(
+      'main.welcome',
+      null,
+      h('span.mark', null, icon('mark', 24, 2.6)),
+      h('h1', null, 'Welcome to Momentz!'),
+      h('p', null, 'Momentz is a study coach. Pick one moment from your week of studying, such as a seminar, a lab or some time working on your own, and talk it through.'),
+      h('p', null, 'You leave with one small thing to try next time, in your own words.'),
+      start
+    )
+  );
+  start.focus();
+}
+
+if (localStorage.getItem('momentz-welcomed')) showHome();
+else showWelcome();
