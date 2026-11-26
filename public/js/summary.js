@@ -1,6 +1,8 @@
 // "Your moment": what the student worked out, in their words, ready to edit.
 
-import { api, autosize, h, icon, param, sidebar, toast } from './common.js';
+import { autosize, h, icon, param, sidebar, toast } from './common.js';
+import { withSummary } from './coach.js';
+import { addToPlaybook, exportNotes, getState, updateMoment } from './store.js';
 
 const id = param('id');
 const main = h('main.main', null, h('div.loading', null, h('span.dots', null, h('i'), h('i'), h('i')), h('p', null, 'Pulling together what you said…')));
@@ -11,10 +13,8 @@ let state;
 let moment;
 try {
   shell.append(main);
-  // Built by Claude from the conversation the first time, and again only if
-  // the conversation has moved on since.
-  moment = await api(`/moments/${id}/summary`, { method: 'POST' });
-  state = await api('/state');
+  moment = await withSummary(id);
+  state = getState();
   shell.prepend(sidebar(state, { currentId: id }));
 } catch (err) {
   main.replaceChildren(
@@ -25,21 +25,9 @@ try {
 
 const s = moment.summary;
 
-// Save edits a moment after the student stops typing.
-let saveTimer;
-let pending = {};
 function save(patch) {
-  Object.assign(pending, patch);
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(flush, 500);
-}
-async function flush() {
-  clearTimeout(saveTimer);
-  if (!Object.keys(pending).length) return;
-  const body = pending;
-  pending = {};
   try {
-    await api(`/moments/${id}`, { method: 'PATCH', body });
+    updateMoment(id, patch);
   } catch (err) {
     toast(err.message);
   }
@@ -119,21 +107,24 @@ const sumToggle = h(
   icon('chevron', 18)
 );
 
-async function addToPlaybook(event) {
+function toPlaybook() {
   if (!s.when.trim() || !s.will.trim()) {
     toast('Fill in both "When…" and "I\'ll…" first.', 'info');
     (s.when.trim() ? will : when).focus();
     return;
   }
-  event.currentTarget.disabled = true;
   try {
-    await flush();
-    const move = await api(`/moments/${id}/playbook`, { method: 'POST' });
-    location.href = `playbook.html#${move.id}`;
+    location.href = `playbook.html#${addToPlaybook(id).id}`;
   } catch (err) {
-    event.currentTarget.disabled = false;
     toast(err.message);
   }
+}
+
+// The notes are put together here and handed over as a file: nothing is uploaded.
+function download() {
+  const url = URL.createObjectURL(new Blob([exportNotes(id)], { type: 'text/markdown' }));
+  h('a', { href: url, download: 'momentz-notes.md' }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 const how = (label, text, { name = false, extra = null, action = null } = {}) =>
@@ -159,7 +150,7 @@ main.replaceChildren(
         null,
         h('span.eyebrow', null, `${s.short_title || moment.title} · ${moment.minutes} minute${moment.minutes === 1 ? '' : 's'}`),
         h('h1', null, "Here's what you worked out."),
-        h('span.note', null, icon('lock', 14), 'Saved on this computer')
+        h('span.note', null, icon('lock', 14), 'Saved on this device')
       ),
       h('a.btn.quiet', { href: `chat.html?id=${id}` }, icon('chat'), 'Back to the chat')
     ),
@@ -193,8 +184,8 @@ main.replaceChildren(
         h(
           'div.actions',
           null,
-          h('button.btn.primary', { onclick: addToPlaybook }, icon('plus', 18, 2.2), moment.playbookId ? 'Update my playbook' : 'Add to my playbook'),
-          h('a.btn', { href: `/api/moments/${id}/export`, download: 'momentz-notes.md', onclick: flush }, icon('download'), 'Export my notes')
+          h('button.btn.primary', { onclick: toPlaybook }, icon('plus', 18, 2.2), moment.playbookId ? 'Update my playbook' : 'Add to my playbook'),
+          h('button.btn', { onclick: download }, icon('download'), 'Export my notes')
         )
       ),
       h(
@@ -212,10 +203,3 @@ main.replaceChildren(
     )
   )
 );
-
-// Don't lose the last edit if the student leaves straight after typing.
-addEventListener('pagehide', () => {
-  if (Object.keys(pending).length) {
-    fetch(`/api/moments/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pending), keepalive: true });
-  }
-});

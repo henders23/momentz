@@ -1,8 +1,9 @@
 // The playbook: everything the student has decided to try, and how it's going.
 
-import { api, autosize, dayLabel, h, loadOrExplain, sidebar, toast } from './common.js';
+import { autosize, dayLabel, h, sidebar, toast } from './common.js';
+import { deleteMove, getState, logMove, updateMove } from './store.js';
 
-const state = await loadOrExplain('/state');
+const state = getState();
 let filter = 'All';
 // Which card has its log form, history or editor open: { id, panel }.
 let open = location.hash ? { id: location.hash.slice(1), panel: null } : null;
@@ -13,10 +14,10 @@ const list = h('div.moves');
 const STATUS = { new: 'New', trying: 'Trying', working: 'Working' };
 const OUTCOME = { worked: 'It worked', partly: 'Partly', not: "Didn't work" };
 
-async function change(action) {
+function change(action) {
   try {
-    await action();
-    Object.assign(state, await api('/state'));
+    action();
+    Object.assign(state, getState());
   } catch (err) {
     toast(err.message);
   }
@@ -53,7 +54,7 @@ function logForm(move) {
           onclick: () => {
             if (!outcome) return toast('Pick how it went first.', 'info');
             open = { id: move.id, panel: 'history' };
-            change(() => api(`/playbook/${move.id}/log`, { method: 'POST', body: { outcome, note: note.value } }));
+            change(() => logMove(move.id, { outcome, note: note.value }));
           }
         },
         'Save'
@@ -98,14 +99,14 @@ function card(move) {
         ? h(
             'div.row',
             null,
-            h('button.btn.danger', { onclick: () => confirm('Remove this from your playbook?') && change(() => api(`/playbook/${move.id}`, { method: 'DELETE' })) }, 'Remove'),
+            h('button.btn.danger', { onclick: () => confirm('Remove this from your playbook?') && change(() => deleteMove(move.id)) }, 'Remove'),
             h('button.btn.quiet', { onclick: () => toggle(move, 'edit') }, 'Cancel'),
             h(
               'button.btn.primary',
               {
                 onclick: () => {
                   open = null;
-                  change(() => api(`/playbook/${move.id}`, { method: 'PATCH', body: { when: when.value, will: will.value } }));
+                  change(() => updateMove(move.id, { when: when.value, will: will.value }));
                 }
               },
               'Save'

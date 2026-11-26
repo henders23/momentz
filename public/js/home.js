@@ -1,8 +1,9 @@
 // Home: name one moment, choose typing or speaking, start the chat.
 
-import { api, autosize, h, icon, loadOrExplain, sidebar, toast } from './common.js';
+import { autosize, h, icon, sidebar, toast } from './common.js';
+import { createMoment, getState } from './store.js';
 
-const state = await loadOrExplain('/state');
+const state = getState();
 let mode = localStorage.getItem('momentz-mode') === 'speak' ? 'speak' : 'type';
 
 const moment = h('textarea.field', {
@@ -31,19 +32,16 @@ const modeButton = (value, label, iconName) =>
 
 const startButton = h('button.btn.primary.big', { type: 'submit' }, 'Start the chat', icon('arrow', 16, 2.2));
 
-async function start(event) {
+function start(event) {
   event.preventDefault();
   if (!moment.value.trim()) {
     toast('Note which moment you want to go through first.', 'info');
     moment.focus();
     return;
   }
-  startButton.disabled = true;
   try {
-    const created = await api('/moments', { method: 'POST', body: { title: moment.value, mode } });
-    location.href = `chat.html?id=${created.id}`;
+    location.href = `chat.html?id=${createMoment({ title: moment.value, mode })}`;
   } catch (err) {
-    startButton.disabled = false;
     toast(err.message);
   }
 }
@@ -116,14 +114,7 @@ document.body.append(
           'div.stack',
           null,
           h('h1', null, state.profile.name ? `Let's go through a moment from this week's studying, ${state.profile.name}` : "Let's go through a moment from this week's studying"),
-          h(
-            'span.note',
-            null,
-            icon('lock', 14),
-            state.temporary
-              ? "This hosted copy only keeps your moments for a short while. Export anything you want to keep. Only the chat goes to Claude, to get the coach's replies."
-              : "Your moments are saved on this computer. Only the chat goes to Claude, to get the coach's replies."
-          )
+          h('span.note', null, icon('lock', 14), "Your moments are saved in this browser, on this device. Only the chat goes to Claude, to get the coach's replies.")
         ),
         h(
           'form.card.start',

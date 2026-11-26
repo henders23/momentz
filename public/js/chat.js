@@ -1,12 +1,14 @@
 // The chat: nothing on screen but the conversation.
 
-import { api, autosize, dayLabel, h, icon, param, toast } from './common.js';
+import { autosize, dayLabel, h, icon, param, toast } from './common.js';
+import { helpSay, sendMessage } from './coach.js';
 import { Recorder, speechSupported } from './speech.js';
+import { getMoment, updateMoment } from './store.js';
 
 const id = param('id');
 let moment;
 try {
-  moment = await api(`/moments/${id}`);
+  moment = getMoment(id);
 } catch (err) {
   document.body.append(h('div.loading', null, h('p', null, err.message), h('a.btn', { href: 'index.html' }, 'Back to home')));
   throw err;
@@ -85,39 +87,13 @@ async function send({ text = '', choice = '', spokenSeconds } = {}) {
 
   let finished = false;
   try {
-    const res = await fetch(`/api/moments/${id}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, choice, spokenSeconds })
+    const saved = await sendMessage(id, { text, choice, spokenSeconds }, (piece) => {
+      if (waiting.isConnected) waiting.replaceWith(reply);
+      reply.textContent += piece;
+      scrollDown();
     });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Something went wrong. Please try again.');
-
-    // The reply arrives as server-sent events: "event: <name>\ndata: <json>\n\n".
-    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-    let buffer = '';
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += value;
-      let end;
-      while ((end = buffer.indexOf('\n\n')) >= 0) {
-        const chunk = buffer.slice(0, end);
-        buffer = buffer.slice(end + 2);
-        const event = chunk.match(/^event: (.*)$/m)?.[1];
-        const data = JSON.parse(chunk.match(/^data: (.*)$/m)?.[1] ?? '{}');
-        if (event === 'delta') {
-          if (waiting.isConnected) waiting.replaceWith(reply);
-          reply.textContent += data.text;
-          scrollDown();
-        } else if (event === 'done') {
-          items = data.items;
-          finished = true;
-        } else if (event === 'error') {
-          throw new Error(data.message);
-        }
-      }
-    }
-    if (!finished) throw new Error('The connection dropped before the coach finished. Please send that again.');
+    items = saved.items;
+    finished = true;
   } catch (err) {
     items = before;
     toast(err.message);
@@ -164,7 +140,7 @@ async function helpMeSayIt(event) {
   const draft = input.value.trim();
   button.disabled = true;
   try {
-    const { suggestions: list } = await api(`/moments/${id}/help-say`, { method: 'POST', body: { draft } });
+    const list = await helpSay(id, draft);
     suggestions.replaceChildren(
       draft ? 'Another way to say it:' : 'Ways to start:',
       ...list.map((s) =>
@@ -196,7 +172,7 @@ function setMode(next) {
     return;
   }
   mode = next;
-  api(`/moments/${id}`, { method: 'PATCH', body: { mode } }).catch(() => {});
+  updateMoment(id, { mode });
   drawDock();
   if (mode === 'type') input.focus();
 }

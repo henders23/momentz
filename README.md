@@ -36,10 +36,7 @@ Without a key the pages still load, and the chat tells you the coach isn't conne
 
 The repository also deploys to [Vercel](https://vercel.com) as it is: Vercel serves `public/` and runs the server as a function for everything under `/api` (`vercel.json`, `api/index.js`). Add `ANTHROPIC_API_KEY` under the project's Settings → Environment Variables, then redeploy.
 
-Two limits apply there:
-
-- **Moments are not kept.** A function can only write to a temporary folder, which is emptied whenever it restarts, so moments and the playbook disappear after a period of no use and on every deploy. The home page says so. Keeping them needs a database or browser storage in place of `server/store.js`.
-- **There is still no sign-in.** Keep Vercel's Deployment Protection switched on, or anyone with the address shares the one store and your API key.
+There is no sign-in, so keep Vercel's Deployment Protection switched on: anyone who can open the address can use the coach, and that is billed to your API key.
 
 ## The flow
 
@@ -88,7 +85,7 @@ There are three calls:
 
 Things worth knowing if you change it:
 
-- **The API keeps no memory.** Every request sends the whole conversation, which the server stores per moment and appends to. Claude's replies are stored exactly as returned and sent back unchanged.
+- **Nothing is kept on the server.** The browser holds each conversation and sends the whole of it with every request, since the API keeps no memory either. Claude's replies are stored exactly as returned and sent back unchanged.
 - **Buttons are tools.** "Places to look", "Yes, show me / Not now" and "See what you worked out" are three tools Claude can call. A tool call ends the coach's message; the button the student presses is sent back as the tool's result, and the coach carries on from there.
 - **"In your words" is checked.** Quotes Claude lifts for the summary page are kept only if they really appear in what the student wrote.
 - **The model** is `claude-opus-5-5`. Set `MOMENTZ_MODEL` in `.env` to use another, for example `claude-haiku-5-5` for lower cost.
@@ -96,17 +93,18 @@ Things worth knowing if you change it:
 
 ## Privacy and limits
 
-- Moments and the playbook are saved in `data/momentz.json` on the machine running the server. Delete that file to start again.
+- Moments, the playbook and the student's details are saved in the browser's own storage (`localStorage`), on the student's device. The server keeps none of it. They stay on that browser: another device or browser starts empty, and clearing the browser's site data deletes them. "Export my notes" saves a moment as a file.
 - The conversation is sent to Anthropic's API to get the coach's replies. Speaking uses the browser's speech recognition (Chrome, Edge, Safari), which in Chrome sends audio to Google.
-- There are no accounts: the app holds one student's data, and by default the server only accepts connections from the same computer. Add sign-in and a per-user store before putting it on the internet.
+- There are no accounts. Each browser has its own data, but anyone who can reach the server can use the coach on your API key, so by default it only accepts connections from the same computer. Add sign-in before opening it to the internet.
 
 ## Repo layout
 
 ```
 server/index.js     web server and /api routes
 server/coach.js     every Claude API call, the coach prompt and its tools
-server/store.js     JSON-file storage
 public/             the four pages, their scripts (js/) and styles (css/app.css)
+public/js/store.js  everything the student saves, kept in the browser
+public/js/conversation.js  how a chat is stored and shown; the server reads it too
 test/               end-to-end test with a scripted stand-in for the Claude API
 design/             the original design-canvas files the screens were built from
 api/, vercel.json   how Vercel runs the server
