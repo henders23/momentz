@@ -1,4 +1,4 @@
-// Home: a welcome the first time, then name one moment, choose typing or
+// Home: a welcome each time the app is opened, then name one moment, choose typing or
 // speaking, and start the chat.
 
 import { autosize, h, icon, sidebar, toast } from './common.js';
@@ -66,6 +66,7 @@ const home =
           'div.stack',
           null,
           h('h1', null, state.profile.name ? `Let's go through a moment from this week's studying, ${state.profile.name}` : "Let's go through a moment from this week's studying"),
+          h('p.lead', null, "The chat asks four things: what happened, what you expected, what got in the way, and what you'll try next time."),
           h('span.note', null, icon('lock', 14), "Your moments are saved in this browser, on this device. Only the chat goes to Claude, to get the coach's replies.")
         ),
         h(
@@ -89,21 +90,6 @@ const home =
             ),
             startButton
           )
-        ),
-        h(
-          'div.stack',
-          null,
-          h('span.eyebrow', null, 'What the chat will ask'),
-          h(
-            'div.steps',
-            null,
-            [
-              ['What happened', 'Messy is fine.'],
-              ['What you expected', 'The difference is the useful bit.'],
-              ['What got in the way', 'In that exact moment.'],
-              ["What you'll try", 'One small thing, and when.']
-            ].map(([title, text]) => h('div', null, h('b', null, title), h('span', null, text)))
-          )
         )
       )
     )
@@ -114,13 +100,14 @@ function showHome() {
   moment.focus();
 }
 
-// Shown until the student has pressed "Let's start" once in this browser.
+// Shown each time the app is opened. Coming back to Home from another page
+// in the same visit skips it.
 function showWelcome() {
   const start = h(
     'button.btn.primary.big',
     {
       onclick: () => {
-        localStorage.setItem('momentz-welcomed', 'yes');
+        sessionStorage.setItem('momentz-welcomed', 'yes');
         showHome();
       }
     },
@@ -141,5 +128,5 @@ function showWelcome() {
   start.focus();
 }
 
-if (localStorage.getItem('momentz-welcomed')) showHome();
+if (sessionStorage.getItem('momentz-welcomed')) showHome();
 else showWelcome();
