@@ -50,55 +50,6 @@ moment.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.shiftKey) start(event);
 });
 
-// The move the student is trying now, and how the playbook is doing.
-const trying = state.playbook.find((p) => p.status !== 'working');
-const working = state.playbook.filter((p) => p.status === 'working');
-
-const tryingCard = trying
-  ? h(
-      'div.card',
-      null,
-      h('div.head', null, h('span.eyebrow.orange', null, trying.status === 'new' ? 'To try next' : 'Trying now'), trying.tryAt && h('span', null, trying.tryAt)),
-      h('span.title', null, trying.title),
-      h('p', null, `When ${trying.when}, I'll ${trying.will}.`),
-      h('a.note', { href: `playbook.html#${trying.id}` }, trying.checkIn ? 'Tried it? Log how it went.' : 'Open in your playbook')
-    )
-  : h(
-      'div.card',
-      null,
-      h('div.head', null, h('span.eyebrow.orange', null, 'To try next')),
-      h('span.title', null, 'Nothing yet'),
-      h('p', null, 'Each chat ends with one small thing to try. It will show up here.')
-    );
-
-const playbookCard = h(
-  'a.card',
-  { href: 'playbook.html' },
-  h(
-    'div.stack',
-    null,
-    h('span.eyebrow.accent', null, 'Your playbook'),
-    h(
-      'span.title',
-      null,
-      working.length
-        ? `${working.length} thing${working.length === 1 ? '' : 's'} you've tried ${working.length === 1 ? 'is' : 'are'} working`
-        : state.playbook.length
-          ? `${state.playbook.length} thing${state.playbook.length === 1 ? '' : 's'} to try`
-          : 'Empty for now'
-    ),
-    h(
-      'p',
-      null,
-      (working.length ? working : state.playbook)
-        .slice(0, 3)
-        .map((p) => p.title)
-        .join(' · ') || 'What you work out from your own moments collects here.'
-    )
-  ),
-  h('span.go', null, 'Open playbook', icon('arrow', 16, 2.2))
-);
-
 document.body.append(
   h(
     'div.shell',
@@ -152,8 +103,7 @@ document.body.append(
               ["What you'll try", 'One small thing, and when.']
             ].map(([title, text]) => h('div', null, h('b', null, title), h('span', null, text)))
           )
-        ),
-        h('div.pair', null, tryingCard, playbookCard)
+        )
       )
     )
   )
