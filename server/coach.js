@@ -303,6 +303,11 @@ export function describeError(err) {
   if (err instanceof Anthropic.APIError) {
     return { status: 503, message: 'The Claude API had a problem. Please try again in a moment.' };
   }
+  // A key is one unbroken run of plain characters. Anything else means more
+  // than the key was pasted in, and the request can't even be sent.
+  if (/[^\x21-\x7e]/.test(process.env.ANTHROPIC_API_KEY ?? '')) {
+    return { status: 500, message: "ANTHROPIC_API_KEY isn't a valid key: it contains spaces or other text. Set it to the key alone, starting with sk-ant-." };
+  }
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
     return {
       status: 500,
