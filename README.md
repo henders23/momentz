@@ -32,6 +32,15 @@ You need [Node.js](https://nodejs.org) 22.9 or newer and a Claude API key.
 
 Without a key the pages still load, and the chat tells you the coach isn't connected.
 
+### On Vercel
+
+The repository also deploys to [Vercel](https://vercel.com) as it is: Vercel serves `public/` and runs the server as a function for everything under `/api` (`vercel.json`, `api/index.js`). Add `ANTHROPIC_API_KEY` under the project's Settings → Environment Variables, then redeploy.
+
+Two limits apply there:
+
+- **Moments are not kept.** A function can only write to a temporary folder, which is emptied whenever it restarts, so moments and the playbook disappear after a period of no use and on every deploy. The home page says so. Keeping them needs a database or browser storage in place of `server/store.js`.
+- **There is still no sign-in.** Keep Vercel's Deployment Protection switched on, or anyone with the address shares the one store and your API key.
+
 ## The flow
 
 The design separates **before**, **during** and **after** the conversation, so that during it the student sees nothing but the chat.
@@ -100,6 +109,7 @@ server/store.js     JSON-file storage
 public/             the four pages, their scripts (js/) and styles (css/app.css)
 test/               end-to-end test with a scripted stand-in for the Claude API
 design/             the original design-canvas files the screens were built from
+api/, vercel.json   how Vercel runs the server
 ```
 
 ```bash

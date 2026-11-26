@@ -2,6 +2,7 @@
 // they call. Claude is only ever called from here (see coach.js).
 
 import express from 'express';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Store } from './store.js';
@@ -18,7 +19,12 @@ import {
 } from './coach.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const store = await new Store(process.env.MOMENTZ_DATA || path.join(root, 'data', 'momentz.json')).load();
+// On Vercel the app runs as a function (see api/index.js): nothing listens on
+// a port, and the only writable place is a temporary folder that is emptied
+// whenever the function restarts. Moments saved there do not last.
+const hosted = Boolean(process.env.VERCEL);
+const dataFile = process.env.MOMENTZ_DATA || (hosted ? path.join(tmpdir(), 'momentz.json') : path.join(root, 'data', 'momentz.json'));
+const store = await new Store(dataFile).load();
 
 const app = express();
 app.use(express.json({ limit: '200kb' }));
@@ -78,7 +84,9 @@ app.get('/api/state', (req, res) => {
     profile: store.profile,
     moments: store.moments.map(momentListing),
     playbook: store.playbook,
-    categories: CATEGORIES
+    categories: CATEGORIES,
+    // True when saved moments are only kept for a short while (see above).
+    temporary: hosted && !process.env.MOMENTZ_DATA
   });
 });
 
@@ -292,12 +300,16 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: message });
 });
 
-const port = Number(process.env.PORT) || 3000;
-// No accounts yet, so by default only this computer can reach the app.
-const host = process.env.HOST || '127.0.0.1';
-app.listen(port, host, () => {
-  console.log(`Momentz is running at http://${host === '0.0.0.0' ? 'localhost' : host}:${port} (model: ${MODEL})`);
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
-    console.log('No ANTHROPIC_API_KEY set: the pages will load, but the coach cannot reply. See README.md.');
-  }
-});
+export default app;
+
+if (!hosted) {
+  const port = Number(process.env.PORT) || 3000;
+  // No accounts yet, so by default only this computer can reach the app.
+  const host = process.env.HOST || '127.0.0.1';
+  app.listen(port, host, () => {
+    console.log(`Momentz is running at http://${host === '0.0.0.0' ? 'localhost' : host}:${port} (model: ${MODEL})`);
+    if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
+      console.log('No ANTHROPIC_API_KEY set: the pages will load, but the coach cannot reply. See README.md.');
+    }
+  });
+}

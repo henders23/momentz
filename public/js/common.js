@@ -15,8 +15,27 @@ export async function api(path, { method = 'GET', body } = {}) {
   }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+  if (!res.ok) {
+    // An error without a message of ours didn't come from the Momentz server.
+    throw new Error(data.error || (res.status === 404 ? "The Momentz server isn't answering at this address. Only the pages are being served." : 'Something went wrong. Please try again.'));
+  }
   return data;
+}
+
+/**
+ * Load what a page can't be drawn without. If that fails, say so on the page:
+ * nothing else has been drawn yet, so the student would be left with a blank
+ * screen.
+ */
+export async function loadOrExplain(path) {
+  try {
+    return await api(path);
+  } catch (err) {
+    document.body.append(
+      h('div.loading', { role: 'alert' }, h('p', null, err.message), h('button.btn', { onclick: () => location.reload() }, 'Try again'))
+    );
+    throw err;
+  }
 }
 
 export const param = (name) => new URLSearchParams(location.search).get(name);

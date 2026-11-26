@@ -432,7 +432,7 @@ export class CoachError extends Error {
 export function describeError(err) {
   if (err instanceof CoachError) return { status: err.status, message: err.message };
   if (err instanceof Anthropic.AuthenticationError) {
-    return { status: 500, message: 'The Claude API key was rejected. Check ANTHROPIC_API_KEY in your .env file.' };
+    return { status: 500, message: 'The Claude API key was rejected. Check ANTHROPIC_API_KEY.' };
   }
   if (err instanceof Anthropic.PermissionDeniedError || err instanceof Anthropic.NotFoundError) {
     return { status: 500, message: `This API key can't use the model "${MODEL}". Check MOMENTZ_MODEL and your account's access.` };
@@ -452,7 +452,9 @@ export function describeError(err) {
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
     return {
       status: 500,
-      message: 'The coach isn\'t connected yet. Add your Claude API key as ANTHROPIC_API_KEY in a .env file and restart the server.'
+      message: process.env.VERCEL
+        ? "The coach isn't connected yet. Add your Claude API key as ANTHROPIC_API_KEY in the Vercel project's environment variables and redeploy."
+        : "The coach isn't connected yet. Add your Claude API key as ANTHROPIC_API_KEY in a .env file and restart the server."
     };
   }
   return { status: 500, message: 'Something went wrong. Please try again.' };

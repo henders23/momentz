@@ -1,8 +1,8 @@
 // The playbook: everything the student has decided to try, and how it's going.
 
-import { api, autosize, dayLabel, h, sidebar, toast } from './common.js';
+import { api, autosize, dayLabel, h, loadOrExplain, sidebar, toast } from './common.js';
 
-const state = await api('/state');
+const state = await loadOrExplain('/state');
 let filter = 'All';
 // Which card has its log form, history or editor open: { id, panel }.
 let open = location.hash ? { id: location.hash.slice(1), panel: null } : null;

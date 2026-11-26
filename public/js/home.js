@@ -1,8 +1,8 @@
 // Home: name one moment, choose typing or speaking, start the chat.
 
-import { api, autosize, h, icon, sidebar, toast } from './common.js';
+import { api, autosize, h, icon, loadOrExplain, sidebar, toast } from './common.js';
 
-const state = await api('/state');
+const state = await loadOrExplain('/state');
 let mode = localStorage.getItem('momentz-mode') === 'speak' ? 'speak' : 'type';
 
 const moment = h('textarea.field', {
@@ -116,7 +116,14 @@ document.body.append(
           'div.stack',
           null,
           h('h1', null, state.profile.name ? `Let's go through a moment from this week's studying, ${state.profile.name}` : "Let's go through a moment from this week's studying"),
-          h('span.note', null, icon('lock', 14), 'Your moments are saved on this computer. Only the chat goes to Claude, to get the coach\'s replies.')
+          h(
+            'span.note',
+            null,
+            icon('lock', 14),
+            state.temporary
+              ? "This hosted copy only keeps your moments for a short while. Export anything you want to keep. Only the chat goes to Claude, to get the coach's replies."
+              : "Your moments are saved on this computer. Only the chat goes to Claude, to get the coach's replies."
+          )
         ),
         h(
           'form.card.start',
