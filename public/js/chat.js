@@ -24,7 +24,7 @@ const scrollDown = () => window.scrollTo({ top: document.body.scrollHeight });
 
 // --- The conversation -------------------------------------------------------
 
-const coachBubble = (...body) => h('div.coach', null, h('span.mark', null, icon('mark', 14, 2.8)), h('div.body', null, body));
+const coachBubble = (...body) => h('div.coach', null, h('span.mark', { 'aria-hidden': 'true' }, h('i')), h('div.body', null, body));
 
 function widget(item, isLast) {
   const w = item.widget;
@@ -184,7 +184,7 @@ const typeComposer = () =>
     h('label.sr-only', { htmlFor: 'msg' }, 'Your message'),
     input,
     h('button.square.ghost', { 'aria-label': 'Help me say it', title: 'Help me say it', onclick: helpMeSayIt }, 'Aa'),
-    h('button.square', { 'aria-label': 'Switch to speaking', title: 'Switch to speaking', onclick: () => setMode('speak') }, icon('mic', 18)),
+    h('button.square.mic', { 'aria-label': 'Switch to speaking', title: 'Switch to speaking', onclick: () => setMode('speak') }, icon('mic', 18)),
     h('button.square.send', { 'aria-label': 'Send', onclick: sendTyped }, icon('up', 18, 2.2))
   );
 

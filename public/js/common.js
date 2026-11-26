@@ -47,7 +47,6 @@ export function h(spec, props, ...children) {
 }
 
 const ICONS = {
-  mark: '<path d="M7 17L17 7"/><path d="M9 7h8v8"/>',
   home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>',
   book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/><path d="M9 8h6"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
@@ -150,7 +149,7 @@ export function sidebar(state, { page = null, currentId = null } = {}) {
   const draw = () => {
     const { profile } = state;
     aside.replaceChildren(
-      h('a.logo', { href: 'index.html' }, h('span.mark', null, icon('mark', 16, 2.6)), 'Momentz'),
+      h('a.logo', { href: 'index.html' }, h('span.mark', { 'aria-hidden': 'true' }, h('i')), 'Momentz'),
       h(
         'nav.nav',
         null,
